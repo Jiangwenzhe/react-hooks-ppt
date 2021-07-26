@@ -11,5 +11,8 @@
     "@slidev/theme-seriph": "*",
     "slidev-theme-geist": "^0.6.0"
   },
-  "name": "react-hooks"
+  "name": "react-hooks",
+  "devDependencies": {
+    "playwright-chromium": "^1.13.0"
+  }
 }
