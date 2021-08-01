@@ -89,7 +89,7 @@ h1 {
 # 注意事项
 
 - 只在函数组件中调用 Hook
-- 不能在循环、条件或嵌套函数中调用 Hooks <!-- 因为hooks 总是按照顺序被调用 -->
+- 只能在函数组件的最顶层使用 hooks，而不能再 for 循环、if 等语句下面使用 hooks <!-- 因为hooks 总是按照顺序被调用 -->
 - 搭配 eslint 插件使用
 
 <br/>
@@ -112,6 +112,131 @@ npm install eslint-plugin-react-hooks --save-dev
   }
 }
 ```
+
+---
+
+# 在开始之前，理清概念
+
+来看看渲染
+
+```js {all|6}
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <button onClick={() => setCount(count + 1)}>Click me</button>
+    </div>
+  );
+}
+```
+
+<br/>
+<br/>
+
+<v-click>
+
+1. `count` 会“监听”状态的变化并自动更新吗?
+
+</v-click>
+
+---
+
+```js
+// During first render
+function Counter() {
+  const count = 0; // Returned by useState()
+  // ...
+  <p>You clicked {count} times</p>;
+  // ...
+}
+
+// After a click, our function is called again
+function Counter() {
+  const count = 1; // Returned by useState()
+  // ...
+  <p>You clicked {count} times</p>;
+  // ...
+}
+
+// After another click, our function is called again
+function Counter() {
+  const count = 2; // Returned by useState()
+  // ...
+  <p>You clicked {count} times</p>;
+  // ...
+}
+```
+
+---
+
+## 事件处理函数呢？
+
+<br />
+
+```js
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  function handleAlertClick() {
+    setTimeout(() => {
+      alert("You clicked on: " + count);
+    }, 3000);
+  }
+
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <button onClick={() => setCount(count + 1)}>Click me</button>
+      <button onClick={handleAlertClick}>Show alert</button>
+    </div>
+  );
+}
+```
+
+[示例](https://codesandbox.io/s/compassionate-wood-qr3nj?file=/src/App.js)
+
+---
+
+```js {monaco}
+// During first render
+function Counter() {
+  const count = 0; // Returned by useState()
+  // ...
+  function handleAlertClick() {
+    setTimeout(() => {
+      alert("You clicked on: " + count);
+    }, 3000);
+  }
+  // ...
+}
+
+// After a click, our function is called again
+function Counter() {
+  const count = 1; // Returned by useState()
+  // ...
+  function handleAlertClick() {
+    setTimeout(() => {
+      alert("You clicked on: " + count);
+    }, 3000);
+  }
+  // ...
+}
+```
+
+---
+
+# 每一次渲染都有它自己的…所有
+
+在 Hooks 组件中，每次渲染的：
+
+1. 状态 (state, props)
+2. 事件处理函数
+3. Effect
+4. ...
+
+都是独立的，它们仅仅属于定义它们的那次渲染
 
 ---
 
@@ -140,7 +265,7 @@ const [state, setState] = useState(initialState);
 
 # useState 使用注意点
 
-## 1. 当属性为 Object 时，使用不可变数据结构
+## 1. 当属性为 引用数据类型 时，使用不可变数据结构
 
 ```js {monaco}
 const Message = () => {
@@ -168,17 +293,15 @@ React 使用 `Object.is` 来比较数据
 
 ---
 
-## 2. `useState` 是异步更新的
-
-React 的 batch update 机制
+## 2. `useState` 是"异步"更新的
 
 ```js
 function Counter() {
   const [count, setCount] = React.useState(0);
   const increment = () => {
     setCount(count + 1);
-    // 获取不到最新的 count
-    console.log(count);
+    setCount(count + 1);
+    setCount(count + 1);
   };
   return <button onClick={increment}>{count}</button>;
 }
@@ -189,7 +312,6 @@ function Counter() {
 <v-click>
 
 1. 使用 函数式更新 `prevState => preSate + 1`
-2. 使用 useRef
 
 [举个例子 🙋‍♂️🌰](https://codesandbox.io/s/aged-resonance-rdjfs?file=/src/App.js)
 
@@ -257,7 +379,7 @@ React 会在组件卸载的时候执行清除操作。正如之前学到的，ef
 
 ---
 
-# deps 参数
+# deps 依赖
 
 useEffect 在没有设置第二个参数的时候，会在每次渲染的时候执行其回调
 
@@ -282,58 +404,58 @@ useEffect 有第二个参数，称为依赖数组，只有当依赖数组内的�
 
 ---
 
-# deps
+# deps 依赖
 
-当数组元素类型是基本数据类型的时候可以起到作用，但是对于复杂的数据类型：对象、数组、函数来说，React 会用 引用比较(`Object.is`) 来对比前后是否有不同。检查当前渲染下的这个对象和上一次渲染下的对象的内存地址是否一致。
+<div class="flex mt-8">
 
-<div class="flex">
+<div v-click class="flex-grow w-1/2 pr-2">
 
-<div class="flex-grow w-1/ pr-2">
+需要依赖的 hooks 有：
 
-```js {monaco}
-import React, { useState, useEffect } from "react";
-import { getPlayers } from "../api";
-import Players from "../components/Players";
+- useEffect
+- useCallback
+- useMemo
+- useImperativeHandle
+- useLayoutEffect
 
-// 传入 team 参数，但是我们没法保证传入的 team 属性的地址是一致的
-const Team = ({ team }) => {
-  const [players, setPlayers] = useState([]);
-
-  useEffect(() => {
-    if (team.active) {
-      getPlayers(team.id).then(setPlayers);
-    }
-    // 1. team.id, team.active
-  }, [team]);
-
-  return <Players team={team} players={players} />;
-};
-```
+都是参数的主体作为函数的方法
 
 </div>
 
-<div v-click class="flex-grow w-4 border-l border-vgreen pl-2 text-xs">
+<div v-click class="flex-grow w-1/2 border-l border-vgreen pl-2">
 
-解决方法：
+hooks 的可以分为有基本类型、对象。细分为：
 
-1. 使用 team 对象里的一些属性，而不是使用整个对象
-2. 在组件内部创建对象也行
+- 基本类型
+- 函数
+- 数据对象
+- 混合对象 (由基本类型、函数、数据对象组成)
 
-<div v-click>
-
-  如果在组件内部创建对象的同时，还使用整个对象呢？
-
-</div>
-
-<div v-click>
-
-  1. 使用 useMemo 来缓存变量
+React 对依赖比较采用的是`Object.is`
 
 </div>
 
 </div>
 
-</div>
+---
+
+## 函数作为依赖
+
+<br/>
+
+1. 使用 callback 包裹, 可能会导致依赖链
+2. 纯化函数，让函数的依赖转换为函数参数
+3. 进一步纯化，通过提取函数
+
+<br/>
+<br/>
+
+## 数据对象最为依赖
+
+<br/>
+
+1. 分解为基本类型
+2. 使用 `json.stringfy` 变为基本类型
 
 ---
 
@@ -491,7 +613,10 @@ export default function App() {
   }, [value]);
   return (
     <div className="App">
-      <h1>Hello CodeSandbox</h1>
+      <h1>Hello CodeSandbox</h1>const [count, setCount] = useState(0);
+  const value = React.useMemo(() => {
+    return { name: 1 };
+  }, []);
       <h2>Edit to see some magic happen!</h2>
     </div>
   );
