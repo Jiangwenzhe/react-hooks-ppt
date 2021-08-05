@@ -89,7 +89,7 @@ h1 {
 # 注意事项
 
 - 只在函数组件中调用 Hook
-- 只能在函数组件的最顶层使用 hooks，而不能再 for 循环、if 等语句下面使用 hooks <!-- 因为hooks 总是按照顺序被调用 -->
+- 只能在函数组件的最顶层使用 hooks，而不能再 for 循环、if 等语句下面使用 hooks [🌰](https://www.yuque.com/erzhuyijian/mb596i/uduqea)<!-- 因为hooks 总是按照顺序被调用 -->
 - 搭配 eslint 插件使用
 
 <br/>
@@ -126,7 +126,7 @@ function Counter() {
   return (
     <div>
       <p>You clicked {count} times</p>
-      <button onClick={() => setCount(count + 1)}>Click me</button>
+      <button onClick={() => setCount(count + 1)}>我是按钮</button>
     </div>
   );
 }
@@ -137,32 +137,32 @@ function Counter() {
 
 <v-click>
 
-1. `count` 会“监听”状态的变化并自动更新吗?
+1. 在点击 `按钮` 触发不停渲染的过程中，`count` 会“监听”状态的变化并自动更新吗?
 
 </v-click>
 
 ---
 
 ```js
-// During first render
+// 第一次渲染
 function Counter() {
-  const count = 0; // Returned by useState()
+  const count = 0; // 从 useState() 返回
   // ...
   <p>You clicked {count} times</p>;
   // ...
 }
 
-// After a click, our function is called again
+// 点击按钮之后，Counter 被重新调用
 function Counter() {
-  const count = 1; // Returned by useState()
+  const count = 1; // 从 useState() 返回
   // ...
   <p>You clicked {count} times</p>;
   // ...
 }
 
-// After another click, our function is called again
+// 点击按钮之后，Counter 被重新调用
 function Counter() {
-  const count = 2; // Returned by useState()
+  const count = 2; // 从 useState() 返回
   // ...
   <p>You clicked {count} times</p>;
   // ...
@@ -171,7 +171,7 @@ function Counter() {
 
 ---
 
-## 事件处理函数呢？
+## 事件处理函数呢？ [示例](https://codesandbox.io/s/compassionate-wood-qr3nj?file=/src/App.js)
 
 <br />
 
@@ -195,7 +195,12 @@ function Counter() {
 }
 ```
 
-[示例](https://codesandbox.io/s/compassionate-wood-qr3nj?file=/src/App.js)
+<v-click>
+
+1. 输出的 count 是最新值 -- 事件处理函数在渲染过程中是不变的
+2. 输出的 count 是调用 handleAlertClick 时的 count 值  -- 事件处理函数在每次渲染中会重新生成
+
+</v-click>
 
 ---
 
@@ -244,7 +249,7 @@ function Counter() {
 
 为函数组件添加状态
 
-```js {all|1|3|4}
+```js {all|1|3|4|all}
 import { useState } from "react";
 function Counter() {
   const [count, setCount] = React.useState(0);
@@ -259,7 +264,11 @@ const [state, setState] = useState(initialState);
 
 参数：`initialState` 可以是任何值
 
-返回值：`[state, changeStateFunc]` (数组 ❓)
+返回值：`[属性, 修改属性的函数]` (数组 ❓)
+
+```js {monaco}
+
+```
 
 ---
 
@@ -287,7 +296,7 @@ const Message = () => {
 
 <v-click>
 
-React 使用 `Object.is` 来比较数据
+React 使用 (`Object.is`)[https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Object/is] 来比较数据
 
 </v-click>
 
@@ -295,7 +304,7 @@ React 使用 `Object.is` 来比较数据
 
 ## 2. `useState` 是"异步"更新的
 
-```js
+```js {monaco}
 function Counter() {
   const [count, setCount] = React.useState(0);
   const increment = () => {
@@ -311,9 +320,30 @@ function Counter() {
 
 <v-click>
 
-1. 使用 函数式更新 `prevState => preSate + 1`
+为什么点击一次 count 加 1，而不是加 3 ？
 
-[举个例子 🙋‍♂️🌰](https://codesandbox.io/s/aged-resonance-rdjfs?file=/src/App.js)
+</v-click>
+
+<v-click>
+
+1. 使用 函数式更新 `prevState => preSate + 1`  // 利用函数，接收旧值，进行更新
+
+</v-click>
+
+---
+
+# 关于 batch update 批量更新
+
+<br />
+<br />
+<br />
+
+
+<v-click>
+
+- 在 react 的 event handler (事件处理) 内部同步的多次 useState 会被 batch 为一次更新
+- 在事件循环里的 useState 不会被批量更新
+- 可以使用 unstable_batchedUpdates 来强制批量更新
 
 </v-click>
 
@@ -322,11 +352,12 @@ function Counter() {
 ## 3. Lazy initialization `useState`参数的惰性初始化
 
 ```js
-// 执行一个 IO 操作
+// 执行一个开销很大的操作作为初始值  如 IO 操作
 const [count, setCount] = React.useState(
   Number(window.localStorage.getItem("count"))
 );
 
+// 可以通过传入一个函数的方法来减少大开销执行的次数
 const getInitialState = () => Number(window.localStorage.getItem("count"));
 const [count, setCount] = React.useState(getInitialState);
 ```
@@ -360,8 +391,6 @@ useEffect(() => {
 2. React 何时清除 effect ? 在啥时执行 cleanup 函数
 
 </v-click>
-
-[CodeSandBox](https://codesandbox.io/s/jovial-khayyam-j59p9?file=/src/App.js)
 
 ---
 
@@ -424,7 +453,7 @@ useEffect 有第二个参数，称为依赖数组，只有当依赖数组内的�
 
 <div v-click class="flex-grow w-1/2 border-l border-vgreen pl-2">
 
-hooks 的可以分为有基本类型、对象。细分为：
+deps 中的元素可以分为有基本类型、对象。细分为：
 
 - 基本类型
 - 函数
@@ -540,7 +569,9 @@ const ref = { current: "" };
 函数组件没有实例
 
 ```js
-useImperativeHandle(ref(父组件通过 ref 定义的引用变量), func (子组件想要暴露给父组件的方法), [deps]);
+useImperativeHandle(ref，      // 父组件通过 ref 定义的引用变量
+                    func,      // 子组件想要暴露给父组件的方法
+                    [depts])   // deps
 ```
 
 <v-click>
@@ -599,7 +630,7 @@ App 渲染几次，value 被定义几次， alert 会被弹出几次?
 
 解决方法:
 
-```js
+```js {all|3,4,5,6|all}
 export default function App() {
   const [count, setCount] = React.useState(0);
   const value = React.useMemo(() => {
@@ -614,9 +645,6 @@ export default function App() {
   return (
     <div className="App">
       <h1>Hello CodeSandbox</h1>const [count, setCount] = useState(0);
-  const value = React.useMemo(() => {
-    return { name: 1 };
-  }, []);
       <h2>Edit to see some magic happen!</h2>
     </div>
   );
@@ -777,3 +805,14 @@ const [form] = Form.useForm(); // dtd 2.0 中的表格交互
 ---
 
 # 作业
+
+## 实现一个 useDebounce 自定义 State
+
+<br>
+<br>
+
+
+```js
+  const debouncedValue = useDebounce(value, time);
+```
+
